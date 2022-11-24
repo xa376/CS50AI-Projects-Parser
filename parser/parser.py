@@ -14,8 +14,14 @@ V -> "arrived" | "came" | "chuckled" | "had" | "lit" | "said" | "sat"
 V -> "smiled" | "tell" | "were"
 """
 
+# Not enough knowledge of english to figure out in less than 4 hours
 NONTERMINALS = """
-S -> N V
+S -> NP VP
+
+AP -> Adj | Adj AP
+NP -> N | Det NP | AP NP | N PP | NV
+PP -> P NP | P Det NP
+VP -> V | V NP | V NP PP | V PP | Adv V PP NP | V P Det Adj N Conj N V
 """
 
 grammar = nltk.CFG.fromstring(NONTERMINALS + TERMINALS)
@@ -62,7 +68,17 @@ def preprocess(sentence):
     and removing any word that does not contain at least one alphabetic
     character.
     """
-    raise NotImplementedError
+    words = []
+
+    # Turns sentence to lowercase, gets each word from sentence, and if word has alphabetic character
+    # appends that word to words
+    for word in nltk.tokenize.wordpunct_tokenize(sentence.lower()):
+        for character in word:
+            if character >= 'a' and character <= 'z':
+                words.append(word)
+                break
+
+    return words
 
 
 def np_chunk(tree):
@@ -72,7 +88,34 @@ def np_chunk(tree):
     whose label is "NP" that does not itself contain any other
     noun phrases as subtrees.
     """
-    raise NotImplementedError
+    chunks = []
+
+    # For each subtree, adds each NP labeled tree with no children to chunks, unless its already there
+    for subtree in tree.subtrees():
+        if subtree != tree:
+
+            # If subtree is labeled NP assigns newchunk to be a NP without children trees
+            if subtree.label() == "NP":
+                newChunk = chunkReturn(subtree)
+
+                # Appends chunk to list if not already inside it
+                if newChunk not in chunks:
+                    chunks.append(newChunk)
+
+    return chunks
+
+# Recursive function that returns a tree labeled NP with no children NP trees
+def chunkReturn(tree):
+
+    # If a subtree in the tree is labeled NP, passes that subtree back to the function
+    for subtree in tree.subtrees():
+        if tree != subtree:
+            if subtree.label() == "NP":
+                nextTree = chunkReturn(subtree)
+                return nextTree
+    
+    # If no subtrees with NP were found returns the tree
+    return tree
 
 
 if __name__ == "__main__":
